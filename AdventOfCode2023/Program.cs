@@ -4,10 +4,10 @@ namespace AdventOfCode2023;
 
 public static partial class Program
 {
-    [GeneratedRegex(@".*?(1|2|3|4|5|6|7|8|9|one|two|three|four|five|six|seven|eight|nine)")]
+    [GeneratedRegex(@".*?(\d|zero|one|two|three|four|five|six|seven|eight|nine)")]
     private static partial Regex FirstDigit();
 
-    [GeneratedRegex(@".*(1|2|3|4|5|6|7|8|9|one|two|three|four|five|six|seven|eight|nine)")]
+    [GeneratedRegex(@".*(\d|zero|one|two|three|four|five|six|seven|eight|nine)")]
     private static partial Regex LastDigit();
 
     static void Main()
@@ -32,15 +32,52 @@ public static partial class Program
             "7" or "seven" => 7,
             "8" or "eight" => 8,
             "9" or "nine" => 9,
-            _ => 0
+            "0" or "zero" or _ => 0
         };
 
         int sum = 0;
         foreach (string line in lines)
         {
-            sum += 10 * DigitToValue(FirstDigit().Match(line).Groups[1].Value);
+            sum += DigitToValue(FirstDigit().Match(line).Groups[1].Value) * 10;
             sum += DigitToValue(LastDigit().Match(line).Groups[1].Value);
         }
         Console.WriteLine(sum);
+        Console.WriteLine();
+
+        Console.WriteLine("Day 02: Part 1");
+        lines = File.ReadAllLines(Path.Combine("Input", "Day02.txt"));
+        int gameNumberSum = 0;
+        int setPowerSum = 0;
+        Dictionary<string, int> cubes = [];
+        foreach (string line in lines)
+        {
+            (cubes["red"], cubes["green"], cubes["blue"]) = (0, 0, 0);
+            string[] gameSplit = line.Split(": ");
+            int gameNumber = int.Parse(gameSplit[0].Split(' ')[1]);
+            foreach (string round in gameSplit[1].Split("; "))
+            {
+                foreach (string reveal in round.Split(", "))
+                {
+                    string[] countAndColor = reveal.Split(' ');
+                    int count = int.Parse(countAndColor[0]);
+                    string color = countAndColor[1];
+                    cubes[color] = Math.Max(cubes[color], count);
+                }
+            }
+
+            if (cubes["red"] <= 12 && cubes["green"] <= 13 && cubes["blue"] <= 14)
+            {
+                gameNumberSum += gameNumber;
+            }
+
+            setPowerSum += cubes["red"] * cubes["green"] * cubes["blue"];
+        }
+
+        Console.WriteLine(gameNumberSum);
+        Console.WriteLine();
+
+        Console.WriteLine("Day 02: Part 2");
+        Console.WriteLine(setPowerSum);
+        Console.WriteLine();
     }
 }
