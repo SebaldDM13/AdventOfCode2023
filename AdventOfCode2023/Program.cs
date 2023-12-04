@@ -12,6 +12,7 @@ public static partial class Program
         Day01();
         Day02();
         Day03();
+        Day04();
     }
 
     [GeneratedRegex(@".*?(\d|zero|one|two|three|four|five|six|seven|eight|nine)")]
@@ -149,6 +150,27 @@ public static partial class Program
         }
         
         Console.WriteLine(sumOfPartNumbers);
+        Console.WriteLine();
+    }
+
+    static void Day04()
+    {
+        Console.WriteLine("Day 04: Part 1");
+        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day04.txt"));
+        int totalPoints = 0;
+
+        foreach (string line in lines)
+        {
+            string[] parts = line.Split(':', '|');
+            int matches = parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse)
+                                  .Intersect(parts[2].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse))
+                                  .Count();
+
+            int cardPoints = (matches == 0) ? 0 : 1 << (matches - 1);
+            totalPoints += cardPoints;
+        }
+
+        Console.WriteLine(totalPoints);
         Console.WriteLine();
     }
 }
