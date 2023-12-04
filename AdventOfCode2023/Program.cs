@@ -25,7 +25,7 @@ public static partial class Program
     {
         Console.WriteLine("Day 01: Part 1");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day01.txt"));
-        Console.WriteLine(lines.Select(s => (s.First(Char.IsDigit) - '0') * 10 + s.Last(Char.IsDigit) - '0').Sum());
+        Console.WriteLine(lines.Sum(s => (s.First(Char.IsDigit) - '0') * 10 + s.Last(Char.IsDigit) - '0'));
         Console.WriteLine();
 
         Console.WriteLine("Day 01: Part 2");
@@ -43,13 +43,7 @@ public static partial class Program
             "0" or "zero" or _ => 0
         };
 
-        int sumOfCalibrationValues = 0;
-        foreach (string line in lines)
-        {
-            sumOfCalibrationValues += DigitToValue(FirstDigit().Match(line).Groups[1].Value) * 10;
-            sumOfCalibrationValues += DigitToValue(LastDigit().Match(line).Groups[1].Value);
-        }
-        Console.WriteLine(sumOfCalibrationValues);
+        Console.WriteLine(lines.Sum(s => DigitToValue(FirstDigit().Match(s).Groups[1].Value) * 10 + DigitToValue(LastDigit().Match(s).Groups[1].Value)));
         Console.WriteLine();
     }
 
@@ -92,7 +86,7 @@ public static partial class Program
         Console.WriteLine();
     }
 
-    static void Day03()
+    static void Day03Part1VersionA()
     {
         Console.WriteLine("Day 03: Part 1");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day03.txt"));
@@ -117,10 +111,10 @@ public static partial class Program
             }
 
             numberText.Clear();
-        }        
+        }
 
         for (int row = 0; row < lines.Length; row++)
-        {            
+        {
             for (int col = 0; col < lines[row].Length; col++)
             {
                 char top = At(row - 1, col);
@@ -148,8 +142,52 @@ public static partial class Program
             EndOfNumber();
             isAdjacentToSymbol = false;
         }
-        
+
         Console.WriteLine(sumOfPartNumbers);
+        Console.WriteLine();
+    }
+
+    static void Day03()
+    {
+        Console.WriteLine("Day 03: Part 1");
+        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day03.txt"));
+        List<(int row, Range range)> numberMap = [];
+        List<(int row, int col, char symbol)> symbolMap = [];
+
+        for (int row = 0; row < lines.Length; row++)
+        {
+            for (int col = 0; col < lines[row].Length; col++)
+            {
+                switch (lines[row][col])
+                {
+                    case >= '0' and <= '9':
+                        int end = col + 1;
+                        while (end < lines[row].Length && lines[row][end] >= '0' && lines[row][end] <= '9')
+                        {
+                            end++;
+                        }
+
+                        numberMap.Add((row, col..end));
+                        col = end - 1;
+                        break;
+                    case '.':
+                        break;
+                    default:
+                        symbolMap.Add((row, col, lines[row][col]));
+                        break;
+                }
+            }
+        }
+
+        static bool AreAdjacent((int row, Range range) n, (int row, int col, char symbol) s) => Math.Abs(n.row - s.row) <= 1 && n.range.Start.Value - 1 <= s.col && s.col <= n.range.End.Value;
+        Console.WriteLine(numberMap.Where(n => symbolMap.Any(s => AreAdjacent(n, s))).Sum(n => int.Parse(lines[n.row][n.range])));
+        Console.WriteLine();
+
+        Console.WriteLine("Day 03: Part 2");
+        Console.WriteLine(symbolMap.Where(s => s.symbol == '*')
+                                   .Select(s => numberMap.Where(n => AreAdjacent(n, s)))
+                                   .Where(nGroup => nGroup.Count() == 2)
+                                   .Sum(nGroup => nGroup.Aggregate(1, (acc, n) => acc * int.Parse(lines[n.row][n.range]))));
         Console.WriteLine();
     }
 
@@ -157,20 +195,26 @@ public static partial class Program
     {
         Console.WriteLine("Day 04: Part 1");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day04.txt"));
-        int totalPoints = 0;
-
-        foreach (string line in lines)
+        int[] matchCount = new int[lines.Length];
+        for (int i = 0; i < lines.Length; i++)
         {
-            string[] parts = line.Split(':', '|');
-            int matches = parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse)
-                                  .Intersect(parts[2].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse))
-                                  .Count();
-
-            int cardPoints = (matches == 0) ? 0 : 1 << (matches - 1);
-            totalPoints += cardPoints;
+            string[] parts = lines[i].Split(':', '|');
+            matchCount[i] = parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse)
+                                    .Intersect(parts[2].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse))
+                                    .Count();
         }
 
-        Console.WriteLine(totalPoints);
+        Console.WriteLine(matchCount.Where(m => m > 0).Sum(m => 1 << (m - 1)));
+        Console.WriteLine();
+
+        Console.WriteLine("Day 04: Part 2");
+        int[] copyCount = new int[lines.Length];
+        for (int i = copyCount.Length - 1; i >= 0; i--)
+        {
+            copyCount[i] = 1 + copyCount[(i + 1)..(i + 1 + matchCount[i])].Sum();
+        }
+
+        Console.WriteLine(copyCount.Sum());
         Console.WriteLine();
     }
 }
