@@ -221,7 +221,7 @@ public static partial class Program
         Console.Write("Day 05: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day05.txt"));
         long[] number = lines[0].Split(' ').Skip(1).Select(long.Parse).ToArray();
-        Dictionary<string, List<(long, long, long)>> map = [];
+        Dictionary<string, List<(long destination, long source, long length)>> conversionMap = [];
 
         string currentMap = string.Empty;
         foreach (string line in lines[1..])
@@ -229,31 +229,92 @@ public static partial class Program
             if (line.Contains(':'))
             {
                 currentMap = line[0..line.IndexOf(' ')];
-                map[currentMap] = [];
+                conversionMap[currentMap] = [];
             }
             else if (line.Length > 0)
             {
                 string[] part = line.Split(' ');
-                map[currentMap].Add((long.Parse(part[0]), long.Parse(part[1]), long.Parse(part[2])));
+                conversionMap[currentMap].Add((long.Parse(part[0]), long.Parse(part[1]), long.Parse(part[2])));
             }
         }
 
         string sourceType = "seed";
         while (sourceType != "location")
         {
-            KeyValuePair<string, List<(long destination, long source, long length)>> pair = map.Single(m => m.Key.StartsWith(sourceType));
+            string conversionKey = conversionMap.Single(m => m.Key.StartsWith(sourceType)).Key;
+            string destinationType = conversionKey[(conversionKey.LastIndexOf('-') + 1)..];
             for (int i = 0; i < number.Length; i++)
             {
-                int match = pair.Value.FindIndex(t => t.source <= number[i] && number[i] <= t.source + t.length);
-                if (match >= 0)
-                {
-                    number[i] += pair.Value[match].destination - pair.Value[match].source;
-                }
+                (long destination, long source, long length) = conversionMap[conversionKey].FirstOrDefault(m => m.source <= number[i] && number[i] < m.source + m.length);
+                number[i] += destination - source;
             }
 
-            sourceType = pair.Key[(pair.Key.LastIndexOf('-') + 1)..];
+            sourceType = destinationType;
         }
 
         Console.WriteLine(number.Min());
+
+        Console.Write("Day 05: Part 2: ");
+        sourceType = "seed";
+        Dictionary<string, List<(long start, long length)>> numberMap = new() { { sourceType, [] } };
+        number = lines[0].Split(' ').Skip(1).Select(long.Parse).ToArray();
+        for (int i = 0; i < number.Length; i += 2)
+        {
+            numberMap[sourceType].Add((number[i], number[i + 1]));
+        }
+
+        static (long start, long length) Overlap(long start1, long length1, long start2, long length2)
+        {
+            if (start1 + length1 <= start2)
+                return (0, 0);
+
+            if (start2 + length2 <= start1)
+                return (0, 0);
+
+            if (start1 < start2)
+                return (start2, Math.Min(length1 + start1 - start2, length2));
+
+            if (start2 < start1)
+                return (start1, Math.Min(length2 + start2 - start1, length1));
+
+            return (start1, Math.Min(length1, length2));
+        }
+
+        while (sourceType != "location")
+        {
+            string conversionKey = conversionMap.Single(m => m.Key.StartsWith(sourceType)).Key;
+            string destinationType = conversionKey[(conversionKey.LastIndexOf('-') + 1)..];
+            numberMap[destinationType] = [];
+
+            for (int n = 0; n < numberMap[sourceType].Count; n++)
+            {
+                (long sourceStart, long sourceLength) = numberMap[sourceType][n];
+                foreach ((long conversionDestination, long conversionSource, long conversionLength) in conversionMap[conversionKey].OrderBy(c => c.source))
+                {
+                    (long overlapStart, long overlapLength) = Overlap(sourceStart, sourceLength, conversionSource, conversionLength);
+                    if (overlapLength > 0)
+                    {
+                        if (sourceStart < overlapStart)
+                        {
+                            numberMap[destinationType].Add((sourceStart, overlapStart - sourceStart));
+                        }
+
+                        numberMap[destinationType].Add((overlapStart - conversionSource + conversionDestination, overlapLength));
+                        sourceLength -= sourceStart - overlapStart + overlapLength;
+                        sourceStart = overlapStart + overlapLength;
+                    }
+                }
+
+                if (sourceLength > 0)
+                {
+                    numberMap[destinationType].Add((sourceStart, sourceLength));
+                }
+            }
+
+            sourceType = destinationType;
+        }
+
+        Console.WriteLine(numberMap["location"].Min(n => n.start));
+        Console.WriteLine();
     }
 }
