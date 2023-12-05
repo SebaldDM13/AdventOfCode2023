@@ -13,6 +13,7 @@ public static partial class Program
         Day02();
         Day03();
         Day04();
+        Day05();
     }
 
     [GeneratedRegex(@".*?(\d|zero|one|two|three|four|five|six|seven|eight|nine)")]
@@ -23,12 +24,11 @@ public static partial class Program
 
     static void Day01()
     {
-        Console.WriteLine("Day 01: Part 1");
+        Console.Write("Day 01: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day01.txt"));
         Console.WriteLine(lines.Sum(s => (s.First(Char.IsDigit) - '0') * 10 + s.Last(Char.IsDigit) - '0'));
-        Console.WriteLine();
 
-        Console.WriteLine("Day 01: Part 2");
+        Console.Write("Day 01: Part 2: ");
         static int DigitToValue(string input) => input switch
         {
             "1" or "one" => 1,
@@ -49,7 +49,7 @@ public static partial class Program
 
     static void Day02()
     {
-        Console.WriteLine("Day 02: Part 1");
+        Console.Write("Day 02: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day02.txt"));
         int gameNumberSum = 0;
         int setPowerSum = 0;
@@ -57,15 +57,16 @@ public static partial class Program
         foreach (string line in lines)
         {
             (cubes["red"], cubes["green"], cubes["blue"]) = (0, 0, 0);
-            string[] gameSplit = line.Split(": ");
-            int gameNumber = int.Parse(gameSplit[0].Split(' ')[1]);
-            foreach (string round in gameSplit[1].Split("; "))
+            int space = line.IndexOf(' ');
+            int colon = line.IndexOf(':', space);
+            int gameNumber = int.Parse(line[(space + 1)..colon]);
+            foreach (string round in line[(colon + 1)..].Split(';', StringSplitOptions.TrimEntries))
             {
-                foreach (string reveal in round.Split(", "))
+                foreach (string reveal in round.Split(',', StringSplitOptions.TrimEntries))
                 {
-                    string[] countAndColor = reveal.Split(' ');
-                    int count = int.Parse(countAndColor[0]);
-                    string color = countAndColor[1];
+                    space = reveal.IndexOf(' ');
+                    int count = int.Parse(reveal[..space]);
+                    string color = reveal[(space + 1)..];
                     cubes[color] = Math.Max(cubes[color], count);
                 }
             }
@@ -79,16 +80,15 @@ public static partial class Program
         }
 
         Console.WriteLine(gameNumberSum);
-        Console.WriteLine();
 
-        Console.WriteLine("Day 02: Part 2");
+        Console.Write("Day 02: Part 2: ");
         Console.WriteLine(setPowerSum);
         Console.WriteLine();
     }
 
     static void Day03Part1VersionA()
     {
-        Console.WriteLine("Day 03: Part 1");
+        Console.Write("Day 03: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day03.txt"));
         StringBuilder numberText = new();
         int sumOfPartNumbers = 0;
@@ -149,7 +149,7 @@ public static partial class Program
 
     static void Day03()
     {
-        Console.WriteLine("Day 03: Part 1");
+        Console.Write("Day 03: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day03.txt"));
         List<(int row, Range range)> numberMap = [];
         List<(int row, int col, char symbol)> symbolMap = [];
@@ -181,9 +181,8 @@ public static partial class Program
 
         static bool AreAdjacent((int row, Range range) n, (int row, int col, char symbol) s) => Math.Abs(n.row - s.row) <= 1 && n.range.Start.Value - 1 <= s.col && s.col <= n.range.End.Value;
         Console.WriteLine(numberMap.Where(n => symbolMap.Any(s => AreAdjacent(n, s))).Sum(n => int.Parse(lines[n.row][n.range])));
-        Console.WriteLine();
 
-        Console.WriteLine("Day 03: Part 2");
+        Console.Write("Day 03: Part 2: ");
         Console.WriteLine(symbolMap.Where(s => s.symbol == '*')
                                    .Select(s => numberMap.Where(n => AreAdjacent(n, s)))
                                    .Where(nGroup => nGroup.Count() == 2)
@@ -193,28 +192,68 @@ public static partial class Program
 
     static void Day04()
     {
-        Console.WriteLine("Day 04: Part 1");
+        Console.Write("Day 04: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day04.txt"));
-        int[] matchCount = new int[lines.Length];
-        for (int i = 0; i < lines.Length; i++)
-        {
-            string[] parts = lines[i].Split(':', '|');
-            matchCount[i] = parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse)
-                                    .Intersect(parts[2].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse))
-                                    .Count();
-        }
-
-        Console.WriteLine(matchCount.Where(m => m > 0).Sum(m => 1 << (m - 1)));
-        Console.WriteLine();
-
-        Console.WriteLine("Day 04: Part 2");
+        int[] score = new int[lines.Length];
         int[] copyCount = new int[lines.Length];
-        for (int i = copyCount.Length - 1; i >= 0; i--)
+        for (int i = lines.Length - 1; i >= 0; i--)
         {
-            copyCount[i] = 1 + copyCount[(i + 1)..(i + 1 + matchCount[i])].Sum();
+            int offset = 0;
+            copyCount[i] = 1;
+            string[] parts = lines[i].Split(':', '|');            
+            foreach (string s in parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Intersect(parts[2].Split(' ', StringSplitOptions.RemoveEmptyEntries)))
+            {                
+                score[i] = (score[i] == 0) ? 1 : 2 * score[i];
+                offset++;
+                copyCount[i] += copyCount[i + offset];
+            }
         }
 
+        Console.WriteLine(score.Sum());
+
+        Console.Write("Day 04: Part 2: ");
         Console.WriteLine(copyCount.Sum());
         Console.WriteLine();
+    }
+
+    static void Day05()
+    {
+        Console.Write("Day 05: Part 1: ");
+        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day05.txt"));
+        long[] number = lines[0].Split(' ').Skip(1).Select(long.Parse).ToArray();
+        Dictionary<string, List<(long, long, long)>> map = [];
+
+        string currentMap = string.Empty;
+        foreach (string line in lines[1..])
+        {
+            if (line.Contains(':'))
+            {
+                currentMap = line[0..line.IndexOf(' ')];
+                map[currentMap] = [];
+            }
+            else if (line.Length > 0)
+            {
+                string[] part = line.Split(' ');
+                map[currentMap].Add((long.Parse(part[0]), long.Parse(part[1]), long.Parse(part[2])));
+            }
+        }
+
+        string sourceType = "seed";
+        while (sourceType != "location")
+        {
+            KeyValuePair<string, List<(long destination, long source, long length)>> pair = map.Single(m => m.Key.StartsWith(sourceType));
+            for (int i = 0; i < number.Length; i++)
+            {
+                int match = pair.Value.FindIndex(t => t.source <= number[i] && number[i] <= t.source + t.length);
+                if (match >= 0)
+                {
+                    number[i] += pair.Value[match].destination - pair.Value[match].source;
+                }
+            }
+
+            sourceType = pair.Key[(pair.Key.LastIndexOf('-') + 1)..];
+        }
+
+        Console.WriteLine(number.Min());
     }
 }
