@@ -244,9 +244,10 @@ public static partial class Program
         {
             string conversionKey = conversionMap.Single(m => m.Key.StartsWith(sourceType)).Key;
             string destinationType = conversionKey[(conversionKey.LastIndexOf('-') + 1)..];
+
             for (int i = 0; i < number.Length; i++)
             {
-                (long destination, long source, long length) = conversionMap[conversionKey].FirstOrDefault(m => m.source <= number[i] && number[i] < m.source + m.length);
+                (long destination, long source, _) = conversionMap[conversionKey].Find(m => m.source <= number[i] && number[i] < m.source + m.length);
                 number[i] += destination - source;
             }
 
@@ -264,51 +265,24 @@ public static partial class Program
             numberMap[sourceType].Add((number[i], number[i + 1]));
         }
 
-        static (long start, long length) Overlap(long start1, long length1, long start2, long length2)
-        {
-            if (start1 + length1 <= start2)
-                return (0, 0);
-
-            if (start2 + length2 <= start1)
-                return (0, 0);
-
-            if (start1 < start2)
-                return (start2, Math.Min(length1 + start1 - start2, length2));
-
-            if (start2 < start1)
-                return (start1, Math.Min(length2 + start2 - start1, length1));
-
-            return (start1, Math.Min(length1, length2));
-        }
-
         while (sourceType != "location")
         {
             string conversionKey = conversionMap.Single(m => m.Key.StartsWith(sourceType)).Key;
             string destinationType = conversionKey[(conversionKey.LastIndexOf('-') + 1)..];
             numberMap[destinationType] = [];
+            HashSet<long> edgeSet = [
+                .. numberMap[sourceType].Select(m => m.start),
+                .. numberMap[sourceType].Select(m => m.start + m.length),
+                .. conversionMap[conversionKey].Select(m => m.source),
+                .. conversionMap[conversionKey].Select(m => m.source + m.length)];
 
-            for (int n = 0; n < numberMap[sourceType].Count; n++)
+            long[] edges = [.. edgeSet.Order()];
+            for (int i = 0; i < edges.Length - 1; i++)
             {
-                (long sourceStart, long sourceLength) = numberMap[sourceType][n];
-                foreach ((long conversionDestination, long conversionSource, long conversionLength) in conversionMap[conversionKey].OrderBy(c => c.source))
+                if (numberMap[sourceType].Any(m => m.start <= edges[i] && edges[i] < m.start + m.length))
                 {
-                    (long overlapStart, long overlapLength) = Overlap(sourceStart, sourceLength, conversionSource, conversionLength);
-                    if (overlapLength > 0)
-                    {
-                        if (sourceStart < overlapStart)
-                        {
-                            numberMap[destinationType].Add((sourceStart, overlapStart - sourceStart));
-                        }
-
-                        numberMap[destinationType].Add((overlapStart - conversionSource + conversionDestination, overlapLength));
-                        sourceLength -= sourceStart - overlapStart + overlapLength;
-                        sourceStart = overlapStart + overlapLength;
-                    }
-                }
-
-                if (sourceLength > 0)
-                {
-                    numberMap[destinationType].Add((sourceStart, sourceLength));
+                    (long destination, long source, _) = conversionMap[conversionKey].Find(m => m.source <= edges[i] && edges[i] < m.source + m.length);
+                    numberMap[destinationType].Add((edges[i] + destination - source, edges[i + 1] - edges[i]));
                 }
             }
 
