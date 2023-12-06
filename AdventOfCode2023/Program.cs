@@ -14,6 +14,7 @@ public static partial class Program
         Day03();
         Day04();
         Day05();
+        Day06();
     }
 
     [GeneratedRegex(@".*?(\d|zero|one|two|three|four|five|six|seven|eight|nine)")]
@@ -316,5 +317,34 @@ public static partial class Program
 
         Console.WriteLine(numberMap["location"].Min(n => n.start));
         Console.WriteLine();
+    }
+
+    static void Day06()
+    {
+        Console.Write("Day 06: Part 1: ");
+        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day06.txt"));
+        IEnumerable<int> times = lines[0].Split(':')[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse);
+        IEnumerable<int> distances = lines[1].Split(':')[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse);
+        int product = 1;
+        foreach ((int t, int d) in times.Zip(distances))
+        {
+            product *= Enumerable.Range(0, t + 1).Count(n => n * (t - n) > d);
+        }
+
+        Console.WriteLine(product);
+
+        Console.Write("Day 06: Part 2: ");
+        long time = long.Parse(lines[0].Split(':')[1].Replace(" ", ""));
+        long distance = long.Parse(lines[1].Split(':')[1].Replace(" ", ""));
+        long count = 0;
+        for (long n = 0; n <= time; n++)
+        {
+            if (n * (time - n) > distance)
+            {
+                count++;
+            }
+        }
+
+        Console.WriteLine(count);
     }
 }
