@@ -15,6 +15,7 @@ public static partial class Program
         Day04();
         Day05();
         Day06();
+        Day07();
     }
 
     [GeneratedRegex(@".*?(\d|zero|one|two|three|four|five|six|seven|eight|nine)")]
@@ -320,5 +321,147 @@ public static partial class Program
         }
 
         Console.WriteLine(count);
+        Console.WriteLine();
+    }
+
+    static void Day07()
+    {
+        Console.Write("Day 07: Part 1: ");
+
+        static int Part1CardValue(char card) => card switch
+        {
+            >= '2' and <= '9' => card - '0',
+            'T' => 10,
+            'J' => 11,
+            'Q' => 12,
+            'K' => 13,
+            'A' => 14,
+            _ => 0
+        };
+
+        static int Part1HandStrength(string hand)
+        {
+            int[] cardCounts = new int[13];
+            foreach (char c in hand)
+            {
+                cardCounts[Part1CardValue(c) - 2]++;
+            }
+
+            if (cardCounts.Contains(5))
+                return 6;
+
+            if (cardCounts.Contains(4))
+                return 5;
+
+            if (cardCounts.Contains(3) && cardCounts.Contains(2))
+                return 4;
+
+            if (cardCounts.Contains(3))
+                return 3;
+
+            if (cardCounts.Count(c => c == 2) == 2)
+                return 2;
+
+            if (cardCounts.Contains(2))
+                return 1;
+
+            return 0;
+        }
+
+        static int Part1HandComparison(string a, string b)
+        {
+            int relativeValue = Part1HandStrength(a) - Part1HandStrength(b);
+            if (relativeValue != 0)
+                return relativeValue;
+
+            for (int i = 0; i < 5; i++)
+            {
+                if (a[i] != b[i])
+                    return Part1CardValue(a[i]) - Part1CardValue(b[i]);
+            }
+
+            return 0;
+        }
+                
+        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day07.txt"));
+        List<(string hand, int bid)> plays = [.. lines.Select(s => s.Split(' ')).Select(t => (t[0], int.Parse(t[1])))];
+        plays.Sort((a, b) => Part1HandComparison(a.hand, b.hand));
+
+        int winnings = 0;
+        for (int i = 0; i < plays.Count; i++)
+        {
+            winnings += (i + 1) * plays[i].bid;
+        }
+
+        Console.WriteLine(winnings);
+
+        Console.Write("Day 07: Part 2: ");
+
+        static int Part2CardValue(char card) => card switch
+        {
+            'J' => 1,
+            >= '2' and <= '9' => card - '0',
+            'T' => 10,
+            'Q' => 11,
+            'K' => 12,
+            'A' => 13,
+            _ => 0
+        };
+
+        static int Part2HandStrength(string hand)
+        {
+            int[] cardCounts = new int[13];
+            foreach (char c in hand)
+            {
+                cardCounts[Part2CardValue(c) - 1]++;
+            }
+
+            if (cardCounts[1..].Max() + cardCounts[0] >= 5) 
+                return 6;
+
+            if (cardCounts[1..].Max() + cardCounts[0] == 4)
+                return 5;
+
+            if ((cardCounts.Contains(3) && cardCounts.Contains(2)) ||
+                (cardCounts[1..].Count(c => c == 2) == 2 && cardCounts[0] == 1))
+                return 4;
+
+            if (cardCounts[1..].Max() + cardCounts[0] == 3)
+                return 3;
+
+            if (cardCounts.Count(c => c == 2) == 2)
+                return 2;
+
+            if (cardCounts[1..].Max() + cardCounts[0] == 2)
+                return 1;
+
+            return 0;
+        }
+
+        static int Part2HandComparison(string a, string b)
+        {
+            int relativeValue = Part2HandStrength(a) - Part2HandStrength(b);
+            if (relativeValue != 0)
+                return relativeValue;
+
+            for (int i = 0; i < 5; i++)
+            {
+                if (a[i] != b[i])
+                    return Part2CardValue(a[i]) - Part2CardValue(b[i]);
+            }
+
+            return 0;
+        }
+
+        plays.Sort((a, b) => Part2HandComparison(a.hand, b.hand));
+
+        winnings = 0;
+        for (int i = 0; i < plays.Count; i++)
+        {
+            winnings += (i + 1) * plays[i].bid;
+        }
+
+        Console.WriteLine(winnings);
+        Console.WriteLine();
     }
 }
