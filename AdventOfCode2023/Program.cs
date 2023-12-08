@@ -1,21 +1,19 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace AdventOfCode2023;
 
 public static partial class Program
 {
-    static void Main()
+    public static void Main()
     {
         Console.WriteLine("Advent of Code 2023");
         Console.WriteLine();
-        Day01();
-        Day02();
-        Day03();
-        Day04();
-        Day05();
-        Day06();
-        Day07();
+        foreach (MethodInfo methodInfo in typeof(Program).GetMethods().Where(m => m.Name.StartsWith("Day")).OrderBy(m => m.Name))
+        {
+            methodInfo.Invoke(null, null);
+        }
     }
 
     [GeneratedRegex(@".*?(\d|zero|one|two|three|four|five|six|seven|eight|nine)")]
@@ -24,7 +22,7 @@ public static partial class Program
     [GeneratedRegex(@"(\d|zero|one|two|three|four|five|six|seven|eight|nine).*?", RegexOptions.RightToLeft)]
     private static partial Regex LastDigit();
 
-    static void Day01()
+    public static void Day01()
     {
         Console.Write("Day 01: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day01.txt"));
@@ -49,7 +47,7 @@ public static partial class Program
         Console.WriteLine();
     }
 
-    static void Day02()
+    public static void Day02()
     {
         Console.Write("Day 02: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day02.txt"));
@@ -88,13 +86,11 @@ public static partial class Program
         Console.WriteLine();
     }
 
-    static void Day03Part1VersionA()
+    public static void Day03()
     {
-        Console.Write("Day 03: Part 1: ");
+        Console.Write("Day 03: Part 1: Method 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day03.txt"));
-        StringBuilder numberText = new();
         int sumOfPartNumbers = 0;
-        bool isAdjacentToSymbol = false;
 
         char At(int row, int col)
         {
@@ -105,54 +101,40 @@ public static partial class Program
         }
 
         static bool IsSymbol(char c) => !(c == '.' || char.IsDigit(c));
-        void EndOfNumber()
-        {
-            if (numberText.Length > 0 && isAdjacentToSymbol)
-            {
-                sumOfPartNumbers += int.Parse(numberText.ToString());
-            }
-
-            numberText.Clear();
-        }
 
         for (int row = 0; row < lines.Length; row++)
         {
+            bool isAdjacentToSymbol = false;
             for (int col = 0; col < lines[row].Length; col++)
             {
-                char top = At(row - 1, col);
-                char middle = At(row, col);
-                char bottom = At(row + 1, col);
+                switch (lines[row][col])
+                {
+                    case >= '0' and <= '9':
+                        int end = col;
+                        do
+                        {
+                            isAdjacentToSymbol |= IsSymbol(At(row - 1, end)) || IsSymbol(At(row + 1, end));
+                            end++;
+                        } while (end < lines[row].Length && lines[row][end] >= '0' && lines[row][end] <= '9');
 
-                if (char.IsDigit(middle))
-                {
-                    isAdjacentToSymbol = isAdjacentToSymbol || IsSymbol(top) || IsSymbol(bottom);
-                    numberText.Append(middle);
-                }
-                else if (middle == '.')
-                {
-                    isAdjacentToSymbol = isAdjacentToSymbol || IsSymbol(top) || IsSymbol(bottom);
-                    EndOfNumber();
-                    isAdjacentToSymbol = IsSymbol(top) || IsSymbol(bottom);
-                }
-                else
-                {
-                    isAdjacentToSymbol = true;
-                    EndOfNumber();
+                        isAdjacentToSymbol |= IsSymbol(At(row - 1, end)) || IsSymbol(At(row, end)) || IsSymbol(At(row + 1, end));
+                        if (isAdjacentToSymbol)
+                        {
+                            sumOfPartNumbers += int.Parse(lines[row][col..end]);
+                        }
+
+                        col = end - 1;
+                        break;
+                    default:
+                        isAdjacentToSymbol = IsSymbol(At(row - 1, col)) || IsSymbol(At(row, col)) || IsSymbol(At(row + 1, col));
+                        break;
                 }
             }
-
-            EndOfNumber();
-            isAdjacentToSymbol = false;
         }
 
         Console.WriteLine(sumOfPartNumbers);
-        Console.WriteLine();
-    }
 
-    static void Day03()
-    {
-        Console.Write("Day 03: Part 1: ");
-        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day03.txt"));
+        Console.Write("Day 03: Part 1: Method 2: ");
         List<(int row, Range range)> numberMap = [];
         List<(int row, int col, char symbol)> symbolMap = [];
 
@@ -192,7 +174,7 @@ public static partial class Program
         Console.WriteLine();
     }
 
-    static void Day04()
+    public static void Day04()
     {
         Console.Write("Day 04: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day04.txt"));
@@ -218,7 +200,7 @@ public static partial class Program
         Console.WriteLine();
     }
 
-    static void Day05()
+    public static void Day05()
     {
         Console.Write("Day 05: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day05.txt"));
@@ -294,7 +276,7 @@ public static partial class Program
         Console.WriteLine();
     }
 
-    static void Day06()
+    public static void Day06()
     {
         Console.Write("Day 06: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day06.txt"));
@@ -324,7 +306,7 @@ public static partial class Program
         Console.WriteLine();
     }
 
-    static void Day07()
+    public static void Day07()
     {
         Console.Write("Day 07: Part 1: ");
 
@@ -463,5 +445,67 @@ public static partial class Program
 
         Console.WriteLine(winnings);
         Console.WriteLine();
+    }
+
+    public static void Day08()
+    {
+        Console.Write("Day 08: Part 1: ");
+        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day08.txt"));
+        string directions = lines[0];
+        Dictionary<string, (string left, string right)> map = lines[2..].ToDictionary(s => s[0..3], s => (s[7..10], s[12..15]));
+
+        (int moves, string destination) MoveToZLocation(string start)
+        {
+            int moves = 0;
+            string destination = start;
+            do
+            {
+                switch (directions[moves % directions.Length])
+                {
+                    case 'L':
+                        destination = map[destination].left;
+                        break;
+                    case 'R':
+                        destination = map[destination].right;
+                        break;
+                }
+
+                moves++;
+
+            } while (!destination.EndsWith('Z'));
+
+            return (moves, destination);
+        }
+
+        (int moves, string destination) = MoveToZLocation("AAA");
+        Debug.Assert(destination == "ZZZ");
+        Console.WriteLine(moves);
+
+        Console.Write("Day 08: Part 2: ");        
+        IEnumerable<string> aLocations = map.Keys.Where(s => s.EndsWith('A'));
+        IEnumerable<(int moves, string destination)> zRoute1 = aLocations.Select(MoveToZLocation);
+        IEnumerable<(int moves, string destination)> zRoute2 = zRoute1.Select(m => MoveToZLocation(m.destination));
+
+        Debug.Assert(zRoute1.All(m => m.moves % directions.Length == 0));
+        Debug.Assert(Enumerable.SequenceEqual(zRoute1, zRoute2));
+
+        long LeastCommonMultiple(long a, long b)
+        {
+            (long gcd, long tmp) = (a, b);
+            while (tmp != 0)
+            {
+                (gcd, tmp) = (tmp, gcd % tmp);
+            }
+            return a * b / gcd;
+        }
+
+        int[] cycleLengths = [.. zRoute1.Select(m => m.moves)];
+        long lcm = cycleLengths[0];
+        for (int i = 1; i < cycleLengths.Length; i++)
+        {
+            lcm = LeastCommonMultiple(lcm, cycleLengths[i]);
+        }
+
+        Console.WriteLine(lcm);
     }
 }
