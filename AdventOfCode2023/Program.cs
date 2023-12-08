@@ -88,53 +88,28 @@ public static partial class Program
 
     public static void Day03()
     {
-        Console.Write("Day 03: Part 1: Method 1: ");
+        Console.Write("Day 03: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day03.txt"));
         int sumOfPartNumbers = 0;
-
-        char At(int row, int col)
-        {
-            if (row < 0 || row >= lines.Length || col < 0 || col >= lines[0].Length)
-                return '.';
-
-            return lines[row][col];
-        }
-
-        static bool IsSymbol(char c) => !(c == '.' || char.IsDigit(c));
+        bool IsSymbol(int row, int col) => 0 <= row && row < lines.Length && 0 <= col && col < lines[row].Length && lines[row][col] != '.' && !char.IsAsciiDigit(lines[row][col]);
 
         for (int row = 0; row < lines.Length; row++)
         {
-            bool isAdjacentToSymbol = false;
             for (int col = 0; col < lines[row].Length; col++)
             {
-                switch (lines[row][col])
+                IEnumerable<char> digits = lines[row][col..].TakeWhile(char.IsAsciiDigit);
+                if (digits.Any() && Enumerable.Range(row - 1, 3).Any(r => Enumerable.Range(col - 1, digits.Count() + 2).Any(c => IsSymbol(r, c))))
                 {
-                    case >= '0' and <= '9':
-                        int end = col;
-                        do
-                        {
-                            isAdjacentToSymbol |= IsSymbol(At(row - 1, end)) || IsSymbol(At(row + 1, end));
-                            end++;
-                        } while (end < lines[row].Length && lines[row][end] >= '0' && lines[row][end] <= '9');
-
-                        isAdjacentToSymbol |= IsSymbol(At(row - 1, end)) || IsSymbol(At(row, end)) || IsSymbol(At(row + 1, end));
-                        if (isAdjacentToSymbol)
-                        {
-                            sumOfPartNumbers += int.Parse(lines[row][col..end]);
-                        }
-
-                        col = end - 1;
-                        break;
-                    default:
-                        isAdjacentToSymbol = IsSymbol(At(row - 1, col)) || IsSymbol(At(row, col)) || IsSymbol(At(row + 1, col));
-                        break;
+                    sumOfPartNumbers += int.Parse([.. digits]);
                 }
+
+                col += digits.Count();
             }
         }
 
         Console.WriteLine(sumOfPartNumbers);
 
-        Console.Write("Day 03: Part 1: Method 2: ");
+        Console.Write("Day 03: Part 2: ");
         List<(int row, Range range)> numberMap = [];
         List<(int row, int col, char symbol)> symbolMap = [];
 
@@ -164,9 +139,6 @@ public static partial class Program
         }
 
         static bool AreAdjacent((int row, Range range) n, (int row, int col, char symbol) s) => Math.Abs(n.row - s.row) <= 1 && n.range.Start.Value - 1 <= s.col && s.col <= n.range.End.Value;
-        Console.WriteLine(numberMap.Where(n => symbolMap.Any(s => AreAdjacent(n, s))).Sum(n => int.Parse(lines[n.row][n.range])));
-
-        Console.Write("Day 03: Part 2: ");
         Console.WriteLine(symbolMap.Where(s => s.symbol == '*')
                                    .Select(s => numberMap.Where(n => AreAdjacent(n, s)))
                                    .Where(nGroup => nGroup.Count() == 2)
