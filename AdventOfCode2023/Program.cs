@@ -13,6 +13,7 @@ public static partial class Program
         foreach (MethodInfo methodInfo in typeof(Program).GetMethods().Where(m => m.Name.StartsWith("Day")).OrderBy(m => m.Name))
         {
             methodInfo.Invoke(null, null);
+            Console.WriteLine();
         }
     }
 
@@ -26,7 +27,7 @@ public static partial class Program
     {
         Console.Write("Day 01: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day01.txt"));
-        Console.WriteLine(lines.Sum(s => (s.First(Char.IsDigit) - '0') * 10 + s.Last(Char.IsDigit) - '0'));
+        Console.WriteLine(lines.Sum(s => (s.First(Char.IsAsciiDigit) - '0') * 10 + s.Last(Char.IsAsciiDigit) - '0'));
 
         Console.Write("Day 01: Part 2: ");
         static int DigitToValue(string input) => input switch
@@ -44,7 +45,6 @@ public static partial class Program
         };
 
         Console.WriteLine(lines.Sum(s => DigitToValue(FirstDigit().Match(s).Groups[1].Value) * 10 + DigitToValue(LastDigit().Match(s).Groups[1].Value)));
-        Console.WriteLine();
     }
 
     public static void Day02()
@@ -83,7 +83,6 @@ public static partial class Program
 
         Console.Write("Day 02: Part 2: ");
         Console.WriteLine(setPowerSum);
-        Console.WriteLine();
     }
 
     public static void Day03()
@@ -143,7 +142,6 @@ public static partial class Program
                                    .Select(s => numberMap.Where(n => AreAdjacent(n, s)))
                                    .Where(nGroup => nGroup.Count() == 2)
                                    .Sum(nGroup => nGroup.Aggregate(1, (acc, n) => acc * int.Parse(lines[n.row][n.range]))));
-        Console.WriteLine();
     }
 
     public static void Day04()
@@ -169,14 +167,13 @@ public static partial class Program
 
         Console.Write("Day 04: Part 2: ");
         Console.WriteLine(copyCount.Sum());
-        Console.WriteLine();
     }
 
     public static void Day05()
     {
         Console.Write("Day 05: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day05.txt"));
-        long[] number = lines[0].Split(' ').Skip(1).Select(long.Parse).ToArray();
+        long[] number = [.. lines[0].Split(' ')[1..].Select(long.Parse)];
         Dictionary<string, List<(long destination, long source, long length)>> conversionMap = [];
 
         string currentMap = string.Empty;
@@ -214,7 +211,7 @@ public static partial class Program
         Console.Write("Day 05: Part 2: ");
         sourceType = "seed";
         Dictionary<string, List<(long start, long length)>> numberMap = new() { { sourceType, [] } };
-        number = lines[0].Split(' ').Skip(1).Select(long.Parse).ToArray();
+        number = [.. lines[0].Split(' ')[1..].Select(long.Parse)];
         for (int i = 0; i < number.Length; i += 2)
         {
             numberMap[sourceType].Add((number[i], number[i + 1]));
@@ -245,7 +242,6 @@ public static partial class Program
         }
 
         Console.WriteLine(numberMap["location"].Min(n => n.start));
-        Console.WriteLine();
     }
 
     public static void Day06()
@@ -275,7 +271,6 @@ public static partial class Program
         }
 
         Console.WriteLine(count);
-        Console.WriteLine();
     }
 
     public static void Day07()
@@ -340,14 +335,7 @@ public static partial class Program
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day07.txt"));
         List<(string hand, int bid)> plays = [.. lines.Select(s => s.Split(' ')).Select(t => (t[0], int.Parse(t[1])))];
         plays.Sort((a, b) => Part1HandComparison(a.hand, b.hand));
-
-        int winnings = 0;
-        for (int i = 0; i < plays.Count; i++)
-        {
-            winnings += (i + 1) * plays[i].bid;
-        }
-
-        Console.WriteLine(winnings);
+        Console.WriteLine(plays.Select((p, i) => (i + 1) * p.bid).Sum());
 
         Console.Write("Day 07: Part 2: ");
 
@@ -408,15 +396,7 @@ public static partial class Program
         }
 
         plays.Sort((a, b) => Part2HandComparison(a.hand, b.hand));
-
-        winnings = 0;
-        for (int i = 0; i < plays.Count; i++)
-        {
-            winnings += (i + 1) * plays[i].bid;
-        }
-
-        Console.WriteLine(winnings);
-        Console.WriteLine();
+        Console.WriteLine(plays.Select((p, i) => (i + 1) * p.bid).Sum());
     }
 
     public static void Day08()
@@ -479,5 +459,37 @@ public static partial class Program
         }
 
         Console.WriteLine(lcm);
+    }
+
+    public static void Day09()
+    {
+        Console.Write("Day 09: Part 1: ");
+        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day09.txt"));
+        List<List<int>> sequence = [];
+        int backwardSum = 0;
+        int forwardSum = 0;        
+
+        foreach (string s in lines)
+        {            
+            sequence.Add([0, .. (s.Split(' ').Select(int.Parse)), 0]);
+            while (sequence[^1][1..^1].Any(n => n != 0))
+            {
+                sequence.Add([0, .. sequence[^1][1..^2].Zip(sequence[^1][2..^1], (x, y) => y - x), 0]);
+            }
+
+            for (int i = sequence.Count - 2; i >= 0; i--)
+            {
+                sequence[i][0] = sequence[i][1] - sequence[i + 1][0];
+                sequence[i][^1] = sequence[i][^2] + sequence[i + 1][^1];
+            }
+
+            backwardSum += sequence[0][0];
+            forwardSum += sequence[0][^1];
+            sequence.Clear();
+        }
+
+        Console.WriteLine(forwardSum);
+        Console.Write("Day 09: Part 2: ");
+        Console.WriteLine(backwardSum);
     }
 }
