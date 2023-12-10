@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace AdventOfCode2023;
@@ -491,5 +492,103 @@ public static partial class Program
         Console.WriteLine(forwardSum);
         Console.Write("Day 09: Part 2: ");
         Console.WriteLine(backwardSum);
+    }
+
+    public static void Day10()
+    {
+        Console.Write("Day 10: Part 1: ");
+        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day10.txt"));
+        byte [,] circuitMap = new byte[lines.Length, lines[0].Length];
+
+        char CharacterAt(Vector2Int v)
+        {
+            if (v.Y < 0 || v.Y >= lines.Length || v.X < 0 || v.X >= lines[v.Y].Length)
+                return '.';
+
+            return lines[v.Y][v.X];
+        }
+
+        static Vector2Int Exit(char pipe, Vector2Int entrance)
+        {
+            switch (pipe)
+            {
+                case '|':
+                    if (entrance == Vector2Int.North)
+                        return Vector2Int.South;
+                    if (entrance == Vector2Int.South)
+                        return Vector2Int.North;
+                    break;
+                case '-':
+                    if (entrance == Vector2Int.East)
+                        return Vector2Int.West;
+                    if (entrance == Vector2Int.West)
+                        return Vector2Int.East;
+                    break;
+                case 'L':
+                    if (entrance == Vector2Int.North)
+                        return Vector2Int.East;
+                    if (entrance == Vector2Int.East)
+                        return Vector2Int.North;
+                    break;
+                case 'J':
+                    if (entrance == Vector2Int.North)
+                        return Vector2Int.West;
+                    if (entrance == Vector2Int.West)
+                        return Vector2Int.North;
+                    break;
+                case '7':
+                    if (entrance == Vector2Int.South)
+                        return Vector2Int.West;
+                    if (entrance == Vector2Int.West)
+                        return Vector2Int.South;
+                    break;
+                case 'F':
+                    if (entrance == Vector2Int.South)
+                        return Vector2Int.East;
+                    if (entrance == Vector2Int.East)
+                        return Vector2Int.South;
+                    break;
+            }
+
+            return Vector2Int.Zero;
+        }
+
+        Vector2Int start = new();
+        for (start.Y = 0; start.Y < lines.Length; start.Y++)
+        {
+            start.X = lines[start.Y].IndexOf('S');
+            if (start.X >= 0)
+            {
+                break;
+            }
+        }
+
+        Vector2Int direction = Vector2Int.Zero;
+        if ("|7F".Contains(CharacterAt(start + Vector2Int.North)))
+            direction = Vector2Int.North;
+        else if ("|LJ".Contains(CharacterAt(start + Vector2Int.South)))
+            direction = Vector2Int.South;
+        else if ("-J7".Contains(CharacterAt(start + Vector2Int.East)))
+            direction = Vector2Int.East;
+        else if ("-LF".Contains(CharacterAt(start + Vector2Int.West)))
+            direction = Vector2Int.West;
+
+        circuitMap[start.Y, start.X] = 0x01;
+        Vector2Int location = start + direction;        
+        int steps = 1;
+
+        while (location != start)
+        {
+            direction = Exit(CharacterAt(location), -direction);
+            location += direction;
+            circuitMap[location.Y, location.X] = 0x01;
+            steps++;
+        }
+
+        Console.WriteLine(steps / 2);
+
+        Console.Write("Day 10: Part 2: ");
+
+
     }
 }
