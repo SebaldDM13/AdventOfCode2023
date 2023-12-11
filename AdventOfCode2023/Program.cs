@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace AdventOfCode2023;
@@ -498,97 +497,53 @@ public static partial class Program
     {
         Console.Write("Day 10: Part 1: ");
         string[] lines = File.ReadAllLines(Path.Combine("Input", "Day10.txt"));
-        byte [,] circuitMap = new byte[lines.Length, lines[0].Length];
 
-        char CharacterAt(Vector2Int v)
+        char At((int x, int y) p)
         {
-            if (v.Y < 0 || v.Y >= lines.Length || v.X < 0 || v.X >= lines[v.Y].Length)
+            if (p.y < 0 || p.y >= lines.Length || p.x < 0 || p.x >= lines[p.y].Length)
                 return '.';
 
-            return lines[v.Y][v.X];
+            return lines[p.y][p.x];
         }
 
-        static Vector2Int Exit(char pipe, Vector2Int entrance)
+        static (int x, int y) Move((int x, int y) p, char direction) => direction switch
         {
-            switch (pipe)
-            {
-                case '|':
-                    if (entrance == Vector2Int.North)
-                        return Vector2Int.South;
-                    if (entrance == Vector2Int.South)
-                        return Vector2Int.North;
-                    break;
-                case '-':
-                    if (entrance == Vector2Int.East)
-                        return Vector2Int.West;
-                    if (entrance == Vector2Int.West)
-                        return Vector2Int.East;
-                    break;
-                case 'L':
-                    if (entrance == Vector2Int.North)
-                        return Vector2Int.East;
-                    if (entrance == Vector2Int.East)
-                        return Vector2Int.North;
-                    break;
-                case 'J':
-                    if (entrance == Vector2Int.North)
-                        return Vector2Int.West;
-                    if (entrance == Vector2Int.West)
-                        return Vector2Int.North;
-                    break;
-                case '7':
-                    if (entrance == Vector2Int.South)
-                        return Vector2Int.West;
-                    if (entrance == Vector2Int.West)
-                        return Vector2Int.South;
-                    break;
-                case 'F':
-                    if (entrance == Vector2Int.South)
-                        return Vector2Int.East;
-                    if (entrance == Vector2Int.East)
-                        return Vector2Int.South;
-                    break;
-            }
+            '^' => (p.x, p.y - 1),
+            'v' => (p.x, p.y + 1),
+            '<' => (p.x - 1, p.y),
+            '>' => (p.x + 1, p.y),
+            _ => (p.x, p.y)
+        };
 
-            return Vector2Int.Zero;
-        }
+        Dictionary<char, char> opposite = new() { { '^', 'v' }, { 'v', '^' }, { '<', '>' }, { '>', '<' } };
 
-        Vector2Int start = new();
-        for (start.Y = 0; start.Y < lines.Length; start.Y++)
+        Dictionary<char, char[]> pipeDirections = new() {
+            { '|', ['^', 'v'] },
+            { '-', ['>', '<'] },
+            { 'L', ['^', '>'] },
+            { 'J', ['^', '<'] },
+            { '7', ['v', '<'] },
+            { 'F', ['v', '>'] }
+        };
+
+        (int x, int y) start = lines.Select((line, y) => (x: line.IndexOf('S'), y)).First(p => p.x >= 0);
+        IEnumerable<char> startDirections = "^v><".Where(d => pipeDirections[At(Move(start, d))].Contains(opposite[d]));
+        char startPipe = pipeDirections.Single(p => startDirections.All(d => p.Value.Contains(d))).Key;
+        lines[start.y] = lines[start.y].Replace('S', startPipe);
+                
+        (int x, int y) location = start;
+        HashSet<(int x, int y)> steps = [];
+        char direction = startDirections.First();
+
+        do
         {
-            start.X = lines[start.Y].IndexOf('S');
-            if (start.X >= 0)
-            {
-                break;
-            }
-        }
+            location = Move(location, direction);
+            steps.Add(location);
+            direction = pipeDirections[At(location)].Single(d => d != opposite[direction]);
+        } while (location != start);
 
-        Vector2Int direction = Vector2Int.Zero;
-        if ("|7F".Contains(CharacterAt(start + Vector2Int.North)))
-            direction = Vector2Int.North;
-        else if ("|LJ".Contains(CharacterAt(start + Vector2Int.South)))
-            direction = Vector2Int.South;
-        else if ("-J7".Contains(CharacterAt(start + Vector2Int.East)))
-            direction = Vector2Int.East;
-        else if ("-LF".Contains(CharacterAt(start + Vector2Int.West)))
-            direction = Vector2Int.West;
-
-        circuitMap[start.Y, start.X] = 0x01;
-        Vector2Int location = start + direction;        
-        int steps = 1;
-
-        while (location != start)
-        {
-            direction = Exit(CharacterAt(location), -direction);
-            location += direction;
-            circuitMap[location.Y, location.X] = 0x01;
-            steps++;
-        }
-
-        Console.WriteLine(steps / 2);
+        Console.WriteLine(steps.Count / 2);
 
         Console.Write("Day 10: Part 2: ");
-
-
     }
 }
