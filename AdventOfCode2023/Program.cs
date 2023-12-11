@@ -530,7 +530,7 @@ public static partial class Program
         IEnumerable<char> startDirections = "^v><".Where(d => pipeDirections[At(Move(start, d))].Contains(opposite[d]));
         char startPipe = pipeDirections.Single(p => startDirections.All(d => p.Value.Contains(d))).Key;
         lines[start.y] = lines[start.y].Replace('S', startPipe);
-                
+        
         (int x, int y) location = start;
         HashSet<(int x, int y)> steps = [];
         char direction = startDirections.First();
@@ -545,5 +545,24 @@ public static partial class Program
         Console.WriteLine(steps.Count / 2);
 
         Console.Write("Day 10: Part 2: ");
+        IEnumerable<char> northPipes = pipeDirections.Where(p => p.Value.Contains('^')).Select(p => p.Key);
+        int area = 0;
+        for (int y = 0; y < lines.Length; y++)
+        {
+            bool isInPath = false;
+            for (int x = 0; x < lines[y].Length; x++)
+            {
+                if (steps.Contains((x, y)))
+                {
+                    isInPath ^= northPipes.Contains(lines[y][x]);
+                }
+                else if (isInPath)
+                {
+                    area++;
+                }
+            }
+        }
+
+        Console.WriteLine(area);
     }
 }
