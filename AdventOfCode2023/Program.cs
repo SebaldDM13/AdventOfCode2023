@@ -565,4 +565,48 @@ public static partial class Program
 
         Console.WriteLine(area);
     }
+
+    public static void Day11()
+    {       
+        string[] lines = File.ReadAllLines(Path.Combine("Input", "Day11.txt"));
+        int totalCount = 0;
+        int[] countInRows = new int[lines.Length];
+        int[] countInColumns = new int[lines[0].Length];
+        for (int y = 0; y < lines.Length; y++)
+        {
+            for (int x = 0; x < lines[y].Length; x++)
+            {
+                if (lines[y][x] == '#')
+                {
+                    countInColumns[x]++;
+                    countInRows[y]++;
+                    totalCount++;
+                }
+            }
+        }
+
+        int expansionCrossings = 0;
+        int normalCrossings = 0;
+        foreach (int[] counts in new int[][] { countInRows, countInColumns })
+        {
+            int countSoFar = 0;
+            int countRemaining = totalCount;
+            foreach (int count in counts)
+            {
+                if (count == 0)
+                {
+                    expansionCrossings += countSoFar * countRemaining;
+                }
+                else
+                {
+                    normalCrossings += countSoFar * countRemaining;
+                }
+                countSoFar += count;
+                countRemaining -= count;
+            }
+        }
+
+        Console.WriteLine($"Day 11: Part 1: {normalCrossings + expansionCrossings * 2}");
+        Console.WriteLine($"Day 11: Part 2: {normalCrossings + expansionCrossings * 1_000_000L}");
+    }
 }
